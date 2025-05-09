@@ -1,0 +1,208 @@
+﻿%	This package develops experimental or empirical fragility functions for 
+%	a systems based on damage observations and corresponding intensity measures 
+%	obtained from either experiments or field-surveys, respectively. 
+
+%	Fragility functions (or curves) are used to visually represent the 
+%	probability of failure or damage to a structure (or system) in relation 
+% 	to different levels of seismic intensity or loading. 
+% 	The fragility functions can be modelled using cumulative distribution 
+% 	functions (CDFs) defined by a set of parameters 
+% 	(also known as ‘parametric fragility functions). 
+% 	These parameters can be estimated using Method-of-Moments (MM) or Method A 
+% 	(Porter, K. et al., 2006; Porter, Keith et al., 2007), 
+% 	Maximum Likelihood Estimation (MLE) (Cremen and Baker, 2019; Rota et al., 
+% 	2008; Shinozuka et al., 2000), Sum of Squared Errors (SSE) 
+% 	(Baker, J. W., 2015; Porter, K. et al., 2006; Porter, Keith et al., 2010) 
+% 	or Porter Method B (PB) (Porter, K. et al., 2006; Porter, Keith et al., 2007). 
+% 	MLE is generally preferred over the MM and SSE (Cremen and Baker, 2019; 
+% 	Lallemant et al., 2015). 
+%-------------------------------------------------------------------------
+% Date 09/17/2024
+% Developed by Jitendra Bhatta. Postdoctoral Scholar, Department of Civil & 
+% Systems Engineering, Johns Hopkins University, Baltimore, Maryland, US 
+% and Guest researcher at National Institute of Science and Technology (NIST), 
+% Gaithersburg, Maryland, US, ORCID number: 0000-0002-7188-8292
+% Current email: jitendra.bhatta@canterbury.ac.nz
+%-------------------------------------------------------------------------
+
+Files and their descriptions:
+
+			1 Main_fragility_analysis_file.m 
+
+This is the main file where you input your data,damage states and options for plotting fragility functions. 
+
+% 	This code develops experimental or empirical fragility functions for 
+% 	a systems based on damage observations and corresponding intensity measures 
+%	obtained from either experiments or field-surveys, respectively. 
+
+% Required information:
+% 	1.  Damage state titles (currently, has max limit of 3 damage states, can
+% 		be extended if required. 
+% 	2.  Intensity Measures (IMs) for the observed damage
+% 	3.  Maximum IMs the specimens withstood without reaching the damage state
+% 	4.  Figure plot characteristics
+% 	5.  Damage state colors for figures
+% 	6. Additional paramaters such as:
+%   		a. Checking only lognormal CDF, 
+%   		b. Contraining ispersion with a range or to a value, 
+%   		c. Whether only unique IMs are to be used for analysis
+%   		d. Pierce's criteria to eliminate outliers (Ross 2003)
+
+% Output:
+% 	1. Gives CDF function parameters in the command window
+% 	2. Plots the CDF functions
+
+% ------------------------------------------------------------------ %
+
+				Fragility_FDC_A.m
+
+% 	This gives the lognormal CDF parameters (median and dispersion) for given
+% 	damage data using the Method-of-Moments (MM) or Method A in Porter(2007).
+% 	Steps include:
+%   		1. Runs pierces criteria to eliminate outliers.
+%   		2. Calculates the median and random dispersion. 
+%  		 3. Plots the CDF function and empirical CDF (ECDF)
+%   		4. Conducts Lilliefors Goodness of fit testing (Lilliefors 1967; Annex H FEMA P-58
+%       		2012)
+%   		5. It can conduct normality checks other than Lilliefors by running
+%      			R=normalitytest(DS_intensity_peirces) below.By default, it is an empty matrix, R=[]; 
+%  		6. the median can be updated if dispersion is constrained to a value or
+%       		if uncertainty dispersion is introduced by running sections of the code
+%      			 where indicated 
+
+
+% ------------------------------------------------------------------ %
+
+				Fragility_FDC_B.m
+
+% 	In this code, the data are divided into bins depending upon the intensity measures 
+% 	such that each bin contains approximately the same number of specimens. 
+% 	For each bin, the collapse fraction (i.e. number of failed specimens/ total number of specimens) 
+% 	and average intensity measures are calculated. 
+% 	A linear equation y=mx+c  is fitted to the inverse standard normal distribution 
+% 	of the fractions vs. the natural logarithm of the average intensity measures plot. 
+% 	Then, the median and random dispersion parameters of the lognormal CDF are estimated 
+% 	Refer to (Porter, K. et al., 2006; Porter, Keith et al., 2007) for detailed description of this method. 
+% 	(Porter, K. et al., 2006) recommends using SSE method approach over PB to fit binary failure data 
+% 	i.e. collapse fractions include 0 and 1 and SSE is found to avoid errors that may arise with 
+% 	bin-average intensity measures. 
+
+% Steps include:
+%   1. Sorting the intensity measures in ascedning order.
+%   2. Creating a number of bins such that each bin has approcimately equal number of specimens
+%   3. Obtaining average intensity measures for each bin 
+%   4. Fitting a linear equation y=mx+c  to the inverse standard normal distribution 
+%       of the fractions vs. the natural logarithm of the average intensity
+%       measures plot. I have provided three options if the proposed
+%       equation by Porter Method B doesn't work (i.e. option 1) 
+% NOTE:
+%    There are three options:
+%   Option 1:
+%       The prescribed formula to obtain norm inverse of collapse fraction by porter is :
+%               yj=norminv((mj+1)./(Mj+1))
+%       It doesn't give values for norminv(0) and norminv(1). Hence, non-convergent. 
+%   Option 2:
+%       The collapse fractions are calculated as below, where, approximate collapse 
+%       fractions are usef for fractions equal to 0 and 1.
+        %{
+            fr=mj./Mj;                              
+            fr(N)=mj(N)./Nj;
+            fr(fr==1)=0.999;               %Approximation to 1
+            fr(fr==0)=0.001;               %Approximation to 0
+            yj=norminv(fr);
+            %}
+%Option 3: involves fitting linear curve to mj./Mj vs. average demand in
+%real space. Therefore, doesn't have issue of binary data. 
+
+%   5. Calculating the median and random dispersion
+%   6. Plots the CDF function and empirical CDF (ECDF)
+%   7. Conducts Lilliefors Goodness of fit testing (Lilliefors 1967; Annex H FEMA P-58
+%       2012) for the average demands. 
+%   8. the median can be updated if dispersion is constrained to a value or
+%       if uncertainty dispersion is introduced by running sections of the code
+%       below where indicated 
+
+%------------------------------------------------------------------%
+
+				fittoecdfmle.m
+
+% 	The parameters of the CDF functions are estimated using 
+% 	Maximum Likelihood Estimation (MLE) method (Cremen and Baker, 2019; Rota et al., 
+% 	2008; Shinozuka et al., 2000).
+%
+% 	INPUT:
+% 		The inputs for this function are provided in the
+% 		Main_fragility_analysis_file.m file.
+
+% 	OUTPUT:
+% 		It gives a table R with CDF name,parameters estimation,LogLik,AIC,ks_test
+% 		result and p_value.
+% 		It plots the CDF functions.
+
+%------------------------------------------------------------------%
+
+				fittoecdfsse.m
+
+%	The parameters of the CDF functions are estimated using 
+% 	Sum of Squared Errors (SSE) (Baker, J. W., 2015; Porter, K. et al., 2006; Porter, Keith et al., 2010)
+
+% 	INPUT:
+% 		The inputs for this function are provided in the
+% 		Main_fragility_analysis_file.m file.
+
+% 	OUTPUT:
+% 		It gives a table R with CDF name,parameters estimation,SSE measure,ks_test
+% 		result and p_value.
+% 		It plots the CDF functions.
+
+%------------------------------------------------------------------%
+
+
+   				jb_fit_mle.m
+
+
+%	The parameters of the CDF functions are estimated using 
+% 	Maximum Likelihood Estimation (MLE) method (Cremen and Baker, 2019; Rota et al., 
+% 	2008; Shinozuka et al., 2000).
+%
+% INPUTS
+% 	1. IM        intensity measured
+% 	2. num_gms       number of tests/ground motions at each intensity measure
+% 	3. num_collapse 	number of collapses observed at each intensity measure
+% 	4. Other inputs for this function are provided in the
+% 	Main_fragility_analysis_file.m file.
+
+% OUTPUT:
+% 	parameters estimation,LogLik and AIC. Normalitytest,p_val are calculated
+% 	in the file calling this functions therefore are NaN here. 
+% 	It plots the CDF functions.
+
+%------------------------------------------------------------------------------
+
+					jb_fit_sse.m
+
+% 	The parameters of the CDF functions are estimated using 
+% 	Sum of Squared Errors (SSE) (Baker, J. W., 2015; Porter, K. et al., 2006; 
+% 	Porter, Keith et al., 2010) 
+
+% INPUTS
+% 	1. IM        intensity measured
+% 	2. num_gms       number of tests/ground motions at each intensity measure
+% 	3. num_collapse 	number of collapses observed at each intensity measure
+% 	4. Other inputs for this function are provided in the
+% 	Main_fragility_analysis_file.m file.
+
+% OUTPUT:
+% 	parameters estimatio and sse measure. Normalitytest,p_val are calculated
+% 	in the file calling this functions therefore are NaN here. 
+% 	It plots the CDF functions.
+
+%-------------------------------------------------------------------------------
+
+			correct_beta.m
+
+% This file is used to specify constrains on dispersion (beta). By default it is 0.4. 
+
+%----------------------------------------------------------------------------------
+Other files are from MATLAB file share required for their specific functions. 
+
